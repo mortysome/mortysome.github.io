@@ -1,76 +1,158 @@
- <!--
-  
-███╗░░░███╗░█████╗░██████╗░████████╗██╗░░░██╗  ░██████╗░█████╗░███╗░░░███╗███████╗
-████╗░████║██╔══██╗██╔══██╗╚══██╔══╝╚██╗░██╔╝  ██╔════╝██╔══██╗████╗░████║██╔════╝
-██╔████╔██║██║░░██║██████╔╝░░░██║░░░░╚████╔╝░  ╚█████╗░██║░░██║██╔████╔██║█████╗░░
-██║╚██╔╝██║██║░░██║██╔══██╗░░░██║░░░░░╚██╔╝░░  ░╚═══██╗██║░░██║██║╚██╔╝██║██╔══╝░░
-██║░╚═╝░██║╚█████╔╝██║░░██║░░░██║░░░░░░██║░░░  ██████╔╝╚█████╔╝██║░╚═╝░██║███████╗
-╚═╝░░░░░╚═╝░╚════╝░╚═╝░░╚═╝░░░╚═╝░░░░░░╚═╝░░░  ╚═════╝░░╚════╝░╚═╝░░░░░╚═╝╚══════╝
- -->
- <!DOCTYPE html>
- <html lang="en-us">
-     <head>  
-         <title>Morty's Website</title>
-         <!--Meta Tags-->
-         <meta charset="UTF-8">
-         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-         <meta name="description" content="Today Tastes soo Good- KFC">
-         <meta name="keywords" content="Morty, morty some, Morty Some">
-         <meta name="author" content="Morty Some">
-         <!--Link Tags-->
-         <link rel="stylesheet" href="styles.css">
-         <link rel="icon" href="favicon.ico">
-     </head>
-     <body>
-         <div class="top-container">
-             <img class="cloud-1" src="Images/cloud.png" alt="cloud-image">
-             <h1>Im Morty</h1>
-             <p class="colored-p">A <span class="underline">Pro</span>grammer.</p>
-             <img class="cloud-2" src="Images/cloud.png" alt="cloud-image">
-             <img class="cloud-3" src="Images/cloud.png" alt="cloud-image">
-             <img id="mountain-img" src="Images/mountain.png" alt="mountain-image">
-         </div>
-         <div class="middle-container">
-             <div class="profile">
-               <a title="Click to know what is this!" target="_blank" href="https://en.wikipedia.org/wiki/Pillars_of_Creation"><img id="pfp" src="Images/Pillars Of Creation.jpg" alt="pfp"></a>
-               <h2>Hey!!</h2>
-               <div class="intro-text">
-               <p id="intro"><span class="morty">I'm Morty!</span><span class="underline">I'm a dedicated coder and lifetime student</span> who's constantly looking for interesting topics to work on. I'm always up for a challenge, whether it's creating a website from scratch or learning a new programming language. Join me on my journey as I explore technology in greater detail and learn fresh approaches to innovation and creation. View my most recent coding endeavours and projects by scrolling below. Together, let's discover the world of coding!</p>
-               </div>
-             </div>
-             <hr>
-             <div class="skills">
-               <h2>My Skills.</h2>
-               <div class="skill-row">
-                 <img id="code-gif" src="Images/coding.gif" alt="Coding-Gif">
-                 <h3>Programming</h3>
-                 <p>Embarking on a journey of code in 2020, I discovered my true passion. From contributing to app development to constantly pushing my limits, I've never looked back. My love for programming only grows stronger with each project, and I'm excited to keep exploring the limitless possibilities of technology. Join me on my quest to learn, create, and innovate in the world of programming on <a target="_blank" href="https://github.com/mortySome">GitHub</a>!</p>
-               </div>
-               
-             </div>
-             <hr>
-             <div class="programming-language-div">
-               <h2>Programming Languages Known By Me.</h2>
-               <div class="lang-imgs">
-               <img title="HTML-5" id="html-5-img" src="Images/html5.png" alt="html-image">
-               <img title="CSS" id="css-img" src="Images/css.png" alt="css-image">
-               <img title="Pyhton" id="python-img" src="Images/python.png" alt="Pyhon-Image">
-               <img title="JavaScript" id="js-img" src="Images/javascript.png" alt="JS-Image">
-               <img title="Node.js" id="nodejs-img" src="Images/nodejs.png" alt="Node.js-Img">
-               <p>And I  plan on Learning more Programming Languages in the upcoming Future!...</p>
-               </div>
-             </div>
-           </div>
-           <hr>
-         <footer>           
-           <!--Footer-->
-           <div class="bottom-container">
-             <!--Links for Social Media-->
-             <a href="https://discordapp.com/users/728638731002576956" target="_blank"><img title="discord link" id="discord-connections" src="Images/discord.png" alt="discord-img"></a>
-             <a href="https://instagram.com/morty_some_698" target="_blank"><img title="instagram link" id="instagram-connections" src="Images/instagram.png" alt="instagram-img"></a>
-             <a href="https://github.com/mortySome" target="_blank"><img title="Github" id="github-connections" src="Images/github.png" alt="Gihub image"></a>
-             <p title="copyright" id="copyright">© Morty Some. All Rights Reserverd 2022-2026</p>
-           </div>
-        </footer>   
-     </body>
- </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Under Maintenance</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      height: 100vh;
+      overflow: hidden;
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #0f172a, #1e293b, #334155);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      position: relative;
+    }
+
+    /* Floating blurred circles */
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.35;
+      animation: float 12s ease-in-out infinite;
+    }
+
+    .blob1 {
+      width: 300px;
+      height: 300px;
+      background: #38bdf8;
+      top: -80px;
+      left: -50px;
+    }
+
+    .blob2 {
+      width: 250px;
+      height: 250px;
+      background: #818cf8;
+      bottom: -60px;
+      right: -40px;
+      animation-delay: 3s;
+    }
+
+    .blob3 {
+      width: 180px;
+      height: 180px;
+      background: #67e8f9;
+      top: 40%;
+      left: 60%;
+      animation-delay: 6s;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px) translateX(0px);
+      }
+      50% {
+        transform: translateY(-20px) translateX(15px);
+      }
+    }
+
+    .card {
+      position: relative;
+      z-index: 2;
+      width: 90%;
+      max-width: 600px;
+      padding: 50px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 18px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    p {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .loader {
+      margin: 35px auto 0;
+      width: 60px;
+      height: 60px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top: 3px solid white;
+      border-radius: 50%;
+      animation: spin 1.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .footer {
+      margin-top: 28px;
+      font-size: 0.9rem;
+      opacity: 0.65;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2.2rem;
+      }
+
+      .card {
+        padding: 35px 25px;
+      }
+
+      p {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="blob blob1"></div>
+  <div class="blob blob2"></div>
+  <div class="blob blob3"></div>
+
+  <div class="card">
+    <h1>Under Maintenance</h1>
+
+    <p>
+      The website is currently receiving a few peaceful upgrades.<br>
+      We’ll be back online shortly with a better experience.
+    </p>
+
+    <div class="loader"></div>
+
+    <div class="footer">
+      Thank you for your patience ✨
+    </div>
+  </div>
+
+</body>
+</html>
