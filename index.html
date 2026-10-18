@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--
+  Morty Some — portfolio
+  ─────────────────────────────────────────────
+  Single self-contained page. Structure:
+    1. <style>     design tokens in :root, then components
+    2. <header>    i3-style status bar (workspaces = nav, clock, uptime)
+    3. #home       intro + interactive terminal
+    4. #work       ~/work  (ls -la style project list)
+    5. #skills     ~/skills
+    6. #contact    ~/contact  (socials: TODO, fill PROFILE.socials)
+    7. <script>    PROFILE data object + terminal commands
+
+  To edit content: change the HTML sections and the PROFILE object.
+  To add a terminal command: add an entry to COMMANDS.
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Morty Some</title>
+<meta name="description" content="Why do we fall? So we can learn to pick ourselves up.">
+<meta name="author" content="Morty Some">
+<meta name="theme-color" content="#050806">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Morty Some">
+<meta property="og:description" content="Why do we fall? So we can learn to pick ourselves up.">
+<meta property="og:url" content="https://mortysome.fun/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Morty Some">
+<meta name="twitter:description" content="Why do we fall? So we can learn to pick ourselves up.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2712%27%20fill%3D%27%23050806%27/%3E%3Crect%20x%3D%273%27%20y%3D%273%27%20width%3D%2758%27%20height%3D%2758%27%20rx%3D%2710%27%20fill%3D%27none%27%20stroke%3D%27%2318231c%27%20stroke-width%3D%272%27/%3E%3Cpath%20d%3D%27M16%2022l12%2010-12%2010%27%20fill%3D%27none%27%20stroke%3D%27%2333e17f%27%20stroke-width%3D%275%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27/%3E%3Crect%20x%3D%2732%27%20y%3D%2740%27%20width%3D%2716%27%20height%3D%275%27%20rx%3D%272%27%20fill%3D%27%2333e17f%27/%3E%3C/svg%3E">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a tiling-WM desktop. Status bar on top, one terminal window as the hero, then plain "directory" sections read like a well-kept home folder. */
+:root {
+  --bg: #050806;
+  --surface: #0a0f0c;
+  --surface-2: #0f1611;
+  --line: #18231c;
+  --fg: #d6e5da;
+  --fg-2: #b2c4b7;
+  --muted: #7a8f80;
+  --faint: #4a5c50;
+  --accent: #33e17f;           /* the one bold colour: phosphor green */
+  --accent-hi: #5cf09c;
+  --accent-soft: rgba(51, 225, 127, .10);
+  --glow: rgba(51, 225, 127, .35);
+  /* ANSI terminal colours (semantic inside the terminal only) */
+  --t-green: #33e17f;
+  --t-blue: #6fb8e8;
+  --t-yellow: #d8c172;
+  --t-cyan: #5fd3c0;
+  --t-red: #ef6f6f;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease: cubic-bezier(.2, .7, .1, 1);
+  color-scheme: dark;
+}
+html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+/* base reset so the standalone index.html matches the hosted preview */
+*, *::before, *::after { box-sizing: border-box; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 16.5px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  /* faint scanline grid gives the desktop some texture */
+  background-image: radial-gradient(rgba(51,225,127,.05) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+/* soft vignette so the edges fall into darkness */
+body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse at 50% 20%, transparent 40%, rgba(0,0,0,.55) 100%);
+}
+header, main, footer { position: relative; z-index: 1; }
+header { z-index: 9; }
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px); z-index: 10;
+  background: var(--surface);
+}
+::selection { background: var(--accent); color: var(--bg); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+
+.wrap {
+  max-width: 1160px; margin: 0 auto;
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+}
+.mono { font-family: var(--mono); }
+.c-green { color: var(--t-green); } .c-blue { color: var(--t-blue); } .c-yellow { color: var(--t-yellow); }
+.c-cyan { color: var(--t-cyan); } .c-red { color: var(--t-red); } .c-accent { color: var(--accent); }
+.c-muted { color: var(--muted); } .c-faint { color: var(--faint); }
+
+/* ── Status bar ───────────────────────────── */
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9;
+  background: rgba(10, 15, 12, .86);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono); font-size: 13px;
+}
+.bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 8px; }
+.ws { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.ws a {
+  display: block; text-decoration: none; padding: 4px 10px; border-radius: 4px;
+  color: var(--muted); transition: background .25s var(--ease), color .25s var(--ease);
+}
+.ws a:hover { background: var(--surface-2); color: var(--fg); }
+.ws a.active { background: var(--accent); color: var(--bg); font-weight: 700; }
+.ws a b { font-weight: 700; margin-right: 4px; opacity: .7; }
+.tray { display: flex; gap: 18px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tray .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--t-green); margin-right: 7px; vertical-align: 1px; box-shadow: 0 0 8px var(--t-green); animation: pulse 2.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .45; } }
+
+/* ── Hero ─────────────────────────────────── */
+.hero { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; align-items: center; padding-block: 72px 88px; }
+.hero > * { min-width: 0; }
+.prompt-line { font-family: var(--mono); font-size: 13.5px; color: var(--muted); margin-bottom: 22px; }
+h1 {
+  font-family: var(--mono); font-weight: 800;
+  font-size: clamp(42px, 6.4vw, 78px); line-height: 1; letter-spacing: -.045em;
+  margin: 0 0 24px; text-wrap: balance;
+}
+h1 { text-shadow: 0 0 28px rgba(51, 225, 127, .12); }
+h1 .cursor { display: inline-block; width: .5em; height: .82em; background: var(--accent); box-shadow: 0 0 18px var(--glow); margin-left: .08em; vertical-align: -.04em; animation: blink 1.1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.role { font-family: var(--mono); font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.role span, .role a { padding: 3px 10px; border: 1px solid var(--line); border-radius: 4px; color: var(--fg); background: var(--surface); text-decoration: none; }
+.role a { transition: border-color .25s var(--ease), color .25s var(--ease); }
+.role a:hover { border-color: var(--accent); color: var(--accent); }
+.motto { font-family: var(--mono); font-size: 13px; color: var(--faint); margin: 28px 0 0; letter-spacing: .04em; }
+.motto b { color: var(--muted); font-weight: 500; }
+.desc a { color: var(--t-blue); text-decoration: none; border-bottom: 1px solid rgba(116,180,245,.35); }
+.desc a:hover { border-bottom-color: var(--t-blue); }
+.crow a { color: var(--fg); text-decoration: none; border-bottom: 1px solid var(--line); justify-self: start; }
+.crow a:hover { border-bottom-color: var(--accent); }
+.role span:first-child { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.lede { color: var(--fg-2); font-size: 18px; max-width: 32em; margin: 0 0 32px; }
+.cta { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn {
+  font-family: var(--mono); font-size: 14px; font-weight: 500; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 18px; border-radius: 6px; border: 1px solid var(--line);
+  color: var(--fg); background: var(--surface); cursor: pointer;
+  transition: transform .25s var(--ease), border-color .25s var(--ease), background .25s var(--ease);
+}
+.btn:hover { transform: translateY(-2px); border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 700; }
+.btn.primary:hover { background: var(--accent-hi); box-shadow: 0 0 24px -4px var(--glow); }
+
+/* ── Terminal window ──────────────────────── */
+.win {
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 30px 80px -30px rgba(0,0,0,.85), 0 0 60px -30px rgba(51,225,127,.18);
+  transition: border-color .3s var(--ease), box-shadow .3s var(--ease);
+  position: relative;
+}
+.win:focus-within { border-color: rgba(51, 225, 127, .45); box-shadow: 0 30px 80px -30px rgba(0,0,0,.85), 0 0 70px -24px rgba(51,225,127,.3); }
+/* faint CRT scanlines over the terminal */
+.term { position: relative; background-image: repeating-linear-gradient(to bottom, rgba(255,255,255,.018) 0 1px, transparent 1px 3px); }
+.term .out, .term .inrow { text-shadow: 0 0 6px rgba(51, 225, 127, .08); }
+.titlebar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 9px 14px; background: var(--surface-2); border-bottom: 1px solid var(--line);
+  font-family: var(--mono); font-size: 12.5px; color: var(--muted);
+}
+.titlebar .ctl { display: flex; gap: 6px; }
+.titlebar .ctl i { width: 11px; height: 11px; border: 1px solid var(--faint); border-radius: 2px; display: block; }
+.titlebar .ctl i:last-child { border-color: var(--t-red); background: rgba(239,111,111,.12); }
+.term {
+  font-family: var(--mono); font-size: 13.5px; line-height: 1.6;
+  height: 440px; overflow-y: auto; padding: 16px 18px 12px;
+  cursor: text; scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+}
+.term .out > div { white-space: pre-wrap; word-break: break-word; }
+.term { container-type: inline-size; container-name: term; }
+/* table-style output: a grid, so long values wrap inside their own column */
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 2ch; white-space: normal; }
+.kv > span { min-width: 0; overflow-wrap: anywhere; }
+.kv.pad { padding-left: 2ch; }
+.kv.nmap { grid-template-columns: repeat(3, max-content) minmax(0, 1fr); }
+.kv.dock { grid-template-columns: repeat(3, max-content) minmax(0, 1fr); }
+.ind { padding-left: 7ch; white-space: normal; }
+.manhead { display: flex; justify-content: space-between; gap: 2ch; color: var(--accent); }
+@container term (max-width: 480px) {
+  .kv { column-gap: 1.5ch; }
+  .kv.nmap { grid-template-columns: repeat(3, max-content); }
+  .kv.nmap > span:nth-child(4n) { grid-column: 1 / -1; padding-left: 2ch; margin-bottom: 2px; }
+  .kv.nmap > span:nth-child(4n)::before { content: "↳ "; color: var(--faint); }
+  .kv.nmap > span.h:nth-child(4) { display: none; }
+  .kv.dock { grid-template-columns: max-content minmax(0, 1fr); }
+  .kv.dock > span:nth-child(4n+1), .kv.dock > span:nth-child(4n+3) { display: none; }
+  .ind { padding-left: 3ch; }
+  .manhead .mid { display: none; }
+}
+.term .ps1 { white-space: nowrap; }
+.inrow { display: flex; gap: 8px; align-items: baseline; }
+.inrow input {
+  flex: 1; min-width: 0; background: transparent; border: 0; outline: none;
+  color: var(--fg); font: inherit; font-size: 16px; caret-color: var(--accent); padding: 0;
+}
+@media (min-width: 700px) { .inrow input { font-size: 13.5px; } }
+.neo { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 26px; align-items: start; margin: 4px 0 6px; }
+.neo pre { margin: 0; color: var(--accent); line-height: 1.25; }
+.neo .k { color: var(--accent); font-weight: 700; }
+.swatch { display: inline-block; width: 18px; height: 12px; margin-right: 2px; border-radius: 1px; vertical-align: -1px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.chips button {
+  font-family: var(--mono); font-size: 12px; padding: 4px 10px; border-radius: 4px;
+  background: transparent; color: var(--muted); border: 1px solid var(--line); cursor: pointer;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.chips button:hover { color: var(--fg); border-color: var(--accent); background: var(--accent-soft); }
+.chips .hint { font-family: var(--mono); font-size: 12px; color: var(--faint); align-self: center; margin-right: 4px; }
+kbd { font-family: var(--mono); font-size: .9em; padding: 0 6px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; background: var(--surface-2); color: var(--fg); }
+.term a, .term .jump { color: var(--t-blue); text-decoration: none; border-bottom: 1px solid rgba(111,184,232,.35); cursor: pointer; }
+.term a:hover, .term .jump:hover { border-bottom-color: var(--t-blue); }
+.win.flash { animation: flash .9s var(--ease); }
+@keyframes flash { 0% { box-shadow: 0 0 0 1px var(--accent), 0 0 80px -10px var(--glow); } 100% { box-shadow: 0 30px 80px -30px rgba(0,0,0,.85), 0 0 60px -30px rgba(51,225,127,.18); } }
+.console-hint { position: fixed; z-index: 8; right: max(16px, calc(env(safe-area-inset-right, 0px) + 16px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); font-family: var(--mono); font-size: 12px; color: var(--muted); background: rgba(10,15,12,.9); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; transform: translateY(8px); transition: opacity .3s var(--ease), transform .3s var(--ease); pointer-events: none; }
+.console-hint.show { opacity: 1; transform: none; }
+@media (hover: none) { .console-hint { display: none; } }
+
+/* ── Sections ─────────────────────────────── */
+section { padding-block: 88px; }
+.sec-head { margin-bottom: 40px; }
+.sec-head .path { font-family: var(--mono); font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.sec-head .path b { color: var(--t-green); font-weight: 500; }
+.sec-head .path i { color: var(--t-blue); font-style: normal; }
+h2 { font-family: var(--mono); font-weight: 800; font-size: clamp(28px, 3.8vw, 42px); letter-spacing: -.035em; line-height: 1.1; margin: 0; text-wrap: balance; }
+h2 .hash { color: var(--accent); }
+.sec-head p { color: var(--muted); margin: 10px 0 0; max-width: 40em; }
+
+/* ls -la list */
+.ls { border-top: 1px solid var(--line); }
+.ls-row {
+  display: grid; grid-template-columns: 116px 190px minmax(0, 1fr); gap: 24px;
+  padding: 26px 12px; border-bottom: 1px solid var(--line);
+  transition: background .3s var(--ease);
+  border-radius: 6px;
+}
+.ls-row > * { min-width: 0; }
+.ls-row:hover, .ls-row.hl { background: var(--surface); }
+.ls-row.hl { box-shadow: inset 3px 0 0 var(--accent); }
+.perm { font-family: var(--mono); font-size: 13px; color: var(--faint); padding-top: 4px; }
+.fname { font-family: var(--mono); font-weight: 700; font-size: 18px; color: var(--t-blue); }
+.fname small { display: block; font-weight: 400; font-size: 12px; color: var(--faint); margin-top: 4px; }
+.desc p { margin: 0 0 12px; color: var(--fg-2); max-width: 44em; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.tags li { font-family: var(--mono); font-size: 12px; padding: 3px 9px; border-radius: 4px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.fname { transition: text-shadow .3s var(--ease); }
+.ls-row:hover .fname { text-shadow: 0 0 14px rgba(111, 184, 232, .35); }
+.soon { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--t-yellow); border: 1px dashed rgba(229,192,123,.5); padding: 2px 8px; border-radius: 4px; }
+
+/* skills */
+.skills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; }
+.skill { padding-block: 22px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 18px; }
+.skill:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.skill dt { font-family: var(--mono); font-size: 13px; color: var(--accent); padding-top: 2px; }
+.skill dd { margin: 0; color: var(--fg-2); }
+.skill dd code { font-family: var(--mono); font-size: 13.5px; color: var(--fg); background: var(--surface-2); padding: 1px 6px; border-radius: 3px; }
+
+/* contact */
+.contact-win { max-width: 720px; }
+.contact-body { font-family: var(--mono); font-size: 14px; padding: 20px 22px; display: grid; gap: 10px; }
+.crow { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 16px; align-items: center; }
+.crow .key { color: var(--t-cyan); }
+.contact-note { color: var(--muted); margin-top: 22px; max-width: 40em; }
+
+footer { border-top: 1px solid var(--line); padding-block: 24px; font-family: var(--mono); font-size: 12.5px; color: var(--faint); }
+footer .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px 24px; flex-wrap: wrap; }
+footer .flinks { display: flex; gap: 18px; flex-wrap: wrap; }
+footer .flinks a { color: var(--muted); transition: color .2s var(--ease); }
+footer .flinks a:hover { color: var(--accent); }
+footer .fmeta { display: flex; flex-direction: column; gap: 4px; }
+footer a { text-decoration: none; }
+footer a:hover { color: var(--fg); }
+
+/* entry */
+.rise { animation: rise .8s var(--ease) both; }
+.d1 { animation-delay: .05s } .d2 { animation-delay: .14s } .d3 { animation-delay: .24s } .d4 { animation-delay: .34s }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 960px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-block: 48px 64px; }
+  .ls-row { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 22px 10px; }
+  .perm { padding-top: 0; }
+  .skills { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  .btn { font-size: 13px; padding: 10px 14px; }
+  .tray .up { display: none; }
+  .ws a { padding: 4px 7px; }
+  .ws a span { display: none; }
+  .ws a b { margin-right: 0; opacity: 1; }
+  .term { height: 380px; font-size: 12.5px; padding: 14px; }
+  .neo { grid-template-columns: minmax(0, 1fr); }
+  .neo pre { font-size: 11px; }
+  section { padding-block: 64px; }
+  .skill, .crow { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Status bar / nav ── -->
+<header class="bar" id="top">
+  <div class="wrap">
+    <nav aria-label="Workspaces">
+      <ul class="ws">
+        <li><a href="#home" class="active"><b>1</b><span>home</span></a></li>
+        <li><a href="#work"><b>2</b><span>work</span></a></li>
+        <li><a href="#skills"><b>3</b><span>skills</span></a></li>
+        <li><a href="#contact"><b>4</b><span>contact</span></a></li>
+      </ul>
+    </nav>
+    <div class="tray" aria-label="System tray">
+      <span class="up">learning: <span class="c-yellow">hardware</span></span>
+      <span class="up">up <span id="uptime">0s</span></span>
+      <span><span class="dot"></span>lab online</span>
+      <span id="clock">--:--</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ── Home ── -->
+  <div class="wrap hero" id="home">
+    <div>
+      <div class="prompt-line rise d1"><span class="c-green">morty@debian</span>:<span class="c-blue">~</span>$ whoami</div>
+      <h1 class="rise d2">Morty Some<span class="cursor" aria-hidden="true"></span></h1>
+      <div class="role rise d2"><span>cybersecurity</span><span>linux</span><a href="https://github.com/mortysome" target="_blank" rel="noopener" title="Morty's GitHub">programming ↗</a><span>nerd</span></div>
+      <p class="lede rise d3">Into cybersecurity, CTFs and OSINT. I run a homelab on an old laptop, use Debian daily, write scripts and small tools, and I'm currently learning hardware.</p>
+      <div class="cta rise d4">
+        <a class="btn primary" href="#work">cd ~/work</a>
+        <a class="btn" href="#contact">./contact.sh</a>
+        <a class="btn" href="https://mortysome.fun/blog/" target="_blank" rel="noopener">blog ↗</a>
+      </div>
+      <p class="motto rise d4"># <b>fall</b> → <b>rise</b> → <b>learn</b>. repeat until it works.</p>
+    </div>
+
+    <div class="win rise d3" role="region" aria-label="Interactive terminal">
+      <div class="titlebar">
+        <span>morty@debian: ~ — bash</span>
+        <span class="ctl" aria-hidden="true"><i></i><i></i><i></i></span>
+      </div>
+      <div class="term" id="term">
+        <div class="out" id="out"></div>
+        <noscript><div class="c-faint">the terminal needs JavaScript. everything else on this page works without it.</div></noscript>
+        <label class="inrow" for="cmd">
+          <span class="ps1"><span class="c-green">morty@debian</span>:<span class="c-blue" id="cwd">~</span>$</span>
+          <input id="cmd" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Type a command">
+        </label>
+      </div>
+      <div class="chips" id="chips">
+        <span class="hint">try →</span>
+        <button type="button" data-cmd="help">help</button>
+        <button type="button" data-cmd="ls">ls</button>
+        <button type="button" data-cmd="cat about.txt">cat about.txt</button>
+        <button type="button" data-cmd="nmap mortysome.fun">nmap mortysome.fun</button>
+        <button type="button" data-cmd="docker ps">docker ps</button>
+        <button type="button" data-cmd="man morty">man morty</button>
+        <button type="button" data-cmd="fortune">fortune</button>
+        <button type="button" data-cmd="sudo hire morty">sudo hire morty</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Work ── -->
+  <section id="work">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="path"><b>morty@debian</b>:<i>~/work</i>$ ls -la</div>
+        <h2><span class="hash">#</span> What I work on</h2>
+        <p>What I'm working on and playing with right now.</p>
+      </div>
+
+      <div class="ls">
+        <article class="ls-row" id="dir-homelab">
+          <div class="perm">drwxr-xr-x</div>
+          <div class="fname">homelab/<small>self-hosted</small></div>
+          <div class="desc">
+            <p>An old laptop running <a href="https://github.com/IceWhaleTech/CasaOS" target="_blank" rel="noopener">CasaOS</a>, an open-source home-server OS, with everything in Docker containers. It hosts my media server with automated library management, a Minecraft server, and network storage that works as my own free cloud.</p>
+            <ul class="tags"><li>casaos</li><li>docker</li><li>media server</li><li>minecraft server</li><li>nas</li><li>repurposed hardware</li></ul>
+          </div>
+        </article>
+
+        <article class="ls-row" id="dir-ctf">
+          <div class="perm">drwxr-x---</div>
+          <div class="fname">ctf/<small>capture the flag</small></div>
+          <div class="desc">
+            <p>Capture-the-flag competitions. Write-ups are coming once my notes are readable by someone other than me.</p>
+            <ul class="tags"><li>ctf</li><li>problem solving</li><li><span class="soon">write-ups soon</span></li></ul>
+          </div>
+        </article>
+
+        <article class="ls-row" id="dir-osint">
+          <div class="perm">drwxr-x---</div>
+          <div class="fname">osint/<small>open-source intelligence</small></div>
+          <div class="desc">
+            <p>OSINT challenges, including the ones on <a href="https://gralhix.com/" target="_blank" rel="noopener">Gralhix</a>: geolocating photos, reading metadata, and digging through public information.</p>
+            <ul class="tags"><li>osint</li><li>investigation</li><li>geolocation</li><li>metadata</li></ul>
+          </div>
+        </article>
+
+        <article class="ls-row" id="dir-code">
+          <div class="perm">drwxr-xr-x</div>
+          <div class="fname">code/<small>programming</small></div>
+          <div class="desc">
+            <p>Scripts and small tools for the lab and for CTFs, plus notes on what I&#39;m learning. All of it goes up on <a href="https://github.com/mortysome" target="_blank" rel="noopener">github.com/mortysome</a>.</p>
+            <ul class="tags"><li>programming</li><li>open source</li><li>learning notes</li><li>tooling</li></ul>
+          </div>
+        </article>
+
+        <article class="ls-row" id="dir-hardware">
+          <div class="perm">drwxr-xr-x</div>
+          <div class="fname">hardware/<small>learning · building</small></div>
+          <div class="desc">
+            <p>Currently learning electronics and hardware, and building small projects along the way. Expect a few burnt components.</p>
+            <ul class="tags"><li>hardware</li><li>building</li><li>electronics</li><li><span class="soon">builds soon</span></li></ul>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Skills ── -->
+  <section id="skills">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="path"><b>morty@debian</b>:<i>~</i>$ cat skills.txt</div>
+        <h2><span class="hash">#</span> Toolkit</h2>
+      </div>
+      <dl class="skills">
+        <div class="skill"><dt>systems</dt><dd>Daily driver: <code>Debian</code>. Comfortable in the shell and with general Linux admin.</dd></div>
+        <div class="skill"><dt>security</dt><dd>CTFs, OSINT challenges, and practice against my own lab machines.</dd></div>
+        <div class="skill"><dt>infrastructure</dt><dd>Docker containers on CasaOS: a media server, a Minecraft server, and NAS storage.</dd></div>
+        <div class="skill"><dt>programming</dt><dd>Scripts and small tools for the lab and for CTFs.</dd></div>
+        <div class="skill"><dt>hardware</dt><dd>Learning the basics and building small projects.</dd></div>      </dl>
+    </div>
+  </section>
+
+  <!-- ── Contact ── -->
+  <section id="contact">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="path"><b>morty@debian</b>:<i>~</i>$ ./contact.sh</div>
+        <h2><span class="hash">#</span> Get in touch</h2>
+      </div>
+      <div class="win contact-win">
+        <div class="titlebar"><span>contact.sh — output</span><span class="ctl" aria-hidden="true"><i></i><i></i><i></i></span></div>
+        <div class="contact-body">
+          <div class="crow"><span class="key">github</span><a href="https://github.com/mortysome" target="_blank" rel="noopener">github.com/mortysome ↗</a></div>
+          <div class="crow"><span class="key">blog</span><a href="https://mortysome.fun/blog/" target="_blank" rel="noopener">mortysome.fun/blog ↗</a></div>
+          <div class="crow"><span class="key">linkedin</span><a href="https://www.linkedin.com/in/bhaumik-muley-8453303b3/" target="_blank" rel="noopener">linkedin.com/in/bhaumik-muley ↗</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="console-hint" id="consoleHint" aria-hidden="true">press <kbd>`</kbd> for the terminal</div>
+
+<footer>
+  <div class="wrap">
+    <div class="fmeta">
+      <span>© 2026 Morty Some · always learning · free as in freedom</span>
+      <span>plain html · no trackers · no cookies</span>
+    </div>
+    <nav class="flinks" aria-label="Elsewhere">
+      <a href="https://github.com/mortysome" target="_blank" rel="noopener">github</a>
+      <a href="https://www.linkedin.com/in/bhaumik-muley-8453303b3/" target="_blank" rel="noopener">linkedin</a>
+      <a href="https://mortysome.fun/blog/" target="_blank" rel="noopener">blog</a>
+      <a href="#top">cd .. ↑</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(() => {
+  /* ── Content: edit here ───────────────────── */
+  const PROFILE = {
+    name: 'Morty Some',
+    user: 'morty',
+    host: 'debian',
+    role: 'Cybersecurity · ECE',
+    interests: 'CTF, OSINT, programming, hardware',
+    lab: 'CasaOS + Docker on an old laptop',
+    // TODO: Morty's picks. Format: { title: 'Name', by: 'author or year' }. Empty shows "coming soon".
+    books: [],
+    movies: [],
+    // TODO: fill in remaining URLs; null shows "coming soon"
+    socials: [
+      { label: 'github', url: 'https://github.com/mortysome' },
+      { label: 'blog', url: 'https://mortysome.fun/blog/' },
+      { label: 'linkedin', url: 'https://www.linkedin.com/in/bhaumik-muley-8453303b3/' },
+    ],
+  };
+
+  const FILES = {
+    'about.txt': [
+      `<span class="c-accent">Morty Some</span> — cybersecurity, ECE.`,
+      `Plays CTFs and OSINT challenges, runs a homelab on an old laptop.`,
+      `Debian user, Linux fan, open source supporter.`,
+      `Currently learning hardware.`,
+      `Writes at mortysome.fun/blog.`,
+      `Reads a lot of books, watches a lot of movies. Basically a nerd at this point.`,
+    ],
+    'LICENSE': [
+      `Copyright (C) 2026 ${'Morty Some'}`,
+      ``,
+      `Everything here is meant to be shared.`,
+      `You are free to read it, study it, change it, and pass it on.`,
+      `If you improve it, keep it open for the next person.`,
+      ``,
+      `<span class="c-faint">free as in freedom.</span>`,
+    ],
+    // easter egg, not listed in help or ls
+    'motto.txt': [
+      `<span class="c-faint">#</span> fall. rise. learn.`,
+      `<span class="c-faint">#</span> (and keep backups.)`,
+    ],
+    'skills.txt': () => table([
+      ['<span class="c-cyan">systems</span>', 'debian, linux administration, the shell'],
+      ['<span class="c-cyan">security</span>', 'ctf, osint, attack/defend practice'],
+      ['<span class="c-cyan">infra</span>', 'casaos, docker, self-hosting, nas'],
+      ['<span class="c-cyan">programming</span>', 'scripts and tools, github.com/mortysome'],
+      ['<span class="c-cyan">hardware</span>', 'learning, building'],
+    ]),
+    'contact.txt': () => socialsLines(),
+  };
+  const DIRS = ['homelab', 'ctf', 'osint', 'code', 'hardware'];
+
+  // Message of the day / fortune: the site's stoic, always-learning voice
+  const FORTUNES = [
+    `what stands in the way becomes the way. <span class="c-faint">— marcus aurelius</span>`,
+    `we suffer more often in imagination than in reality. <span class="c-faint">— seneca</span>`,
+    `no one is free who is not master of themselves. <span class="c-faint">— epictetus</span>`,
+    `it is not that we have a short time to live, but that we waste a lot of it. <span class="c-faint">— seneca</span>`,
+    `fall. rise. learn.`,
+    `there's no place like 127.0.0.1.`,
+    `it works on my machine.`,
+    `free as in freedom, not as in beer.`,
+    `given enough eyeballs, all bugs are shallow. <span class="c-faint">— linus's law</span>`,
+    `have you tried turning it off and on again?`,
+    `every error message is a lesson with bad formatting.`,
+  ];
+  let fIdx = Math.floor(Math.random() * FORTUNES.length);
+  const fortune = () => { fIdx = (fIdx + 1) % FORTUNES.length; return FORTUNES[fIdx]; };
+  const HIDDEN = ['motto.txt'];
+  const SHELVES = ['books', 'movies'];
+
+  /* ── Terminal plumbing ───────────────────── */
+  const out = document.getElementById('out');
+  const term = document.getElementById('term');
+  const input = document.getElementById('cmd');
+  const cwdEl = document.getElementById('cwd');
+  const started = Date.now();
+  const hist = []; let hIdx = 0; let cwd = '~'; let busy = false;
+  const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const ps1 = () => `<span class="c-green">${PROFILE.user}@${PROFILE.host}</span>:<span class="c-blue">${cwd}</span>$ `;
+  function print(lines) {
+    (Array.isArray(lines) ? lines : [lines]).forEach(l => {
+      const d = document.createElement('div'); d.innerHTML = l === '' ? '&nbsp;' : l; out.appendChild(d);
+    });
+    term.scrollTop = term.scrollHeight;
+  }
+  function fmtUptime() {
+    const s = Math.floor((Date.now() - started) / 1000);
+    const m = Math.floor(s / 60), h = Math.floor(m / 60);
+    return h ? `${h}h ${m % 60}m` : m ? `${m}m ${s % 60}s` : `${s}s`;
+  }
+  // Table output that wraps cleanly at any width: rows of cells -> CSS grid
+  function table(rows, cls = '', headCls = false) {
+    return `<div class="kv ${cls}">` + rows.map((r, i) =>
+      r.map(c => `<span${headCls && i === 0 ? ' class="h c-faint"' : ''}>${c}</span>`).join('')).join('') + `</div>`;
+  }
+  const block = html => `<div class="ind">${html}</div>`;
+  function socialsLines() {
+    return table(PROFILE.socials.map(s => [`<span class="c-cyan">${s.label}</span>`,
+      s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>` : `<span class="c-yellow">coming soon</span>`]));
+  }
+  function jump(id) {
+    const el = document.getElementById(id); if (!el) return;
+    el.scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth', block: 'center' });
+    document.querySelectorAll('.ls-row.hl').forEach(r => r.classList.remove('hl'));
+    if (el.classList.contains('ls-row')) { el.classList.add('hl'); setTimeout(() => el.classList.remove('hl'), 2600); }
+  }
+
+  function shelf(name) {
+    const items = PROFILE[name] || [];
+    if (!items.length) return print([
+      `<span class="c-cyan">~/${name}/</span>`,
+      `<span class="c-yellow">restocking. picks coming soon.</span>`,
+    ]);
+    print([`<span class="c-cyan">~/${name}/</span>`].concat(items.map(it =>
+      `  <span class="c-fg">${esc(it.title)}</span>${it.by ? ` <span class="c-faint">— ${esc(it.by)}</span>` : ''}`)));
+  }
+
+  function neofetch() {
+    const art =
+`  ┌──────────────┐
+  │ $ _          │
+  │              │
+  │    ms.lab    │
+  └──────────────┘
+ ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔`;
+    const colors = ['--t-red', '--t-green', '--t-yellow', '--t-blue', '--accent', '--t-cyan', '--fg']
+      .map(v => `<span class="swatch" style="background:var(${v})"></span>`).join('');
+    const info = [
+      `<span class="c-green">${PROFILE.user}</span>@<span class="c-green">${PROFILE.host}</span>`,
+      `<span class="c-faint">────────────────────</span>`,
+      `<span class="k">OS</span>: Debian GNU/Linux`,
+      `<span class="k">Role</span>: ${PROFILE.role}`,
+      `<span class="k">Interests</span>: ${PROFILE.interests}`,
+      `<span class="k">Homelab</span>: ${PROFILE.lab}`,
+      `<span class="k">License</span>: free &amp; open source`,
+      `<span class="k">Uptime</span>: ${fmtUptime()} (this session)`,
+      `<span class="k">Shell</span>: portfolio-sh`,
+      ``,
+      colors,
+    ].join('\n');
+    const d = document.createElement('div');
+    d.className = 'neo';
+    d.innerHTML = `<pre aria-hidden="true">${art}</pre><div>${info}</div>`;
+    out.appendChild(d); term.scrollTop = term.scrollHeight;
+  }
+
+  /* ── Commands: add new ones here ─────────── */
+  const COMMANDS = {
+    help: () => print([
+      `<span class="c-accent">available commands</span>`,
+      table([
+        ['whoami', 'who is this'],
+        ['neofetch', 'system info'],
+        ['ls', 'list files and directories'],
+        ['nmap &lt;host&gt;', 'scan a host (try mortysome.fun)'],
+        ['docker ps', 'what the homelab is running'],
+        ['cat &lt;file&gt;', 'read a file (about.txt, skills.txt, contact.txt, LICENSE)'],
+        ['view-source', 'see how this page is built'],
+        ['cd &lt;dir&gt;', 'jump to a project (homelab, ctf, osint, code, hardware)'],
+        ['socials', 'where to find me'],
+        ['github', 'see my code'],
+        ['blog', 'read my posts'],
+        ['man morty', 'the manual page'],
+        ['fortune', 'a line to think about'],
+        ['history', "commands you've run"],
+        ['clear', 'clear the screen'],
+      ].map(([c, d]) => [`<span class="c-green">${c}</span>`, d]), 'pad'),
+      `<span class="c-faint">tab completes, ↑/↓ browse history, \` jumps here from anywhere. there may be a few easter eggs.</span>`,
+    ]),
+    whoami: () => print(`${PROFILE.user} — ${PROFILE.role}. ${PROFILE.interests}.`),
+    neofetch: () => neofetch(),
+    ls: (args) => {
+      const target = args.find(a => !a.startsWith('-'));
+      const t = target ? target.replace(/^~\//, '').replace(/\/$/, '') : '';
+      if (SHELVES.includes(t)) return shelf(t);
+      if (t && DIRS.includes(t)) return print(`<span class="c-faint">README.md</span>  <span class="c-yellow">notes/</span>`);
+      if (t && t !== '~' && t !== '.') return print(`<span class="c-red">ls: cannot access '${esc(target)}': No such file or directory</span>`);
+      const all = args.includes('-a') || args.includes('-la');
+      const files = Object.keys(FILES).filter(f => all || !HIDDEN.includes(f));
+      print(DIRS.map(d => `<span class="c-blue">${d}/</span>`).join('  ') + '  ' +
+        files.join('  ') + (all ? '  <span class="c-faint">.night</span>' : ''));
+    },
+    cat: (args) => {
+      const f = args[0];
+      if (!f) return print(`<span class="c-red">cat: missing file operand</span>`);
+      if (f === '/etc/shadow') return print(`<span class="c-red">cat: /etc/shadow: Permission denied</span> <span class="c-faint">(nice try)</span>`);
+      if (f === '.night') return print(`<span class="c-faint">late-night commits only. try</span> <span class="c-green">cat motto.txt</span>`);
+      if (f === 'flag.txt') return print(`<span class="c-yellow">flag{y0u_r34d_th3_h3lp}</span> <span class="c-faint">— now go play a real CTF</span>`);
+      const c = FILES[f];
+      if (!c) return print(`<span class="c-red">cat: ${esc(f)}: No such file or directory</span>`);
+      print(typeof c === 'function' ? c() : c);
+    },
+    cd: (args) => {
+      const d = (args[0] || '~').replace(/^~\/(?=.)/, '').replace(/\/$/, '');
+      if (SHELVES.includes(d)) return print(`<span class="c-faint">nothing to cd into, it's a shelf. try</span> <span class="c-green">ls ~/${d}</span>`);
+      if (d === '~' || d === '..' || d === '/') { cwd = '~'; cwdEl.textContent = cwd; jump('home'); return; }
+      if (!DIRS.includes(d)) return print(`<span class="c-red">bash: cd: ${esc(d)}: No such file or directory</span>`);
+      cwd = '~/' + d; cwdEl.textContent = cwd;
+      print(`<span class="c-faint">jumping to ~/work/${d} ↓</span>`);
+      jump('dir-' + d);
+    },
+    pwd: () => print(`/home/${PROFILE.user}${cwd.slice(1)}`),
+    nmap: (args) => {
+      const host = args.find(a => !a.startsWith('-'));
+      if (!host) return print(`usage: nmap &lt;host&gt;  <span class="c-faint">try</span> <span class="c-green">nmap mortysome.fun</span>`);
+      const mine = ['mortysome.fun', 'www.mortysome.fun', 'localhost', '127.0.0.1', PROFILE.host];
+      if (!mine.includes(host.toLowerCase())) return print([
+        `<span class="c-yellow">refusing to scan ${esc(host)}.</span>`,
+        `<span class="c-faint">only scan hosts you own or have permission to test. try</span> <span class="c-green">nmap mortysome.fun</span>`,
+      ]);
+      const ms = (Math.random() * 6 + 2).toFixed(4);
+      const t = new Date(); const stamp = t.toISOString().slice(0, 10) + ' ' + t.toTimeString().slice(0, 5);
+      const row = (port, svc, label, target) => [`<span class="c-green">${port}</span>`, `<span class="c-green">open</span>`, svc, target];
+      const lines = [
+        `Starting Nmap 7.94 ( https://nmap.org ) at ${stamp}`,
+        `Nmap scan report for ${esc(host)}`,
+        `Host is up (0.00${ms.split('.')[1].slice(0, 2)}s latency).`,
+        `Not shown: 994 filtered tcp ports`,
+        table([
+          ['PORT', 'STATE', 'SERVICE', 'MAPS TO'],
+          row('22/tcp', 'ssh', 'contact', `<span class="jump" data-jump="contact">./contact.sh</span>`),
+          row('80/tcp', 'http', 'blog', `<a href="https://mortysome.fun/blog/" target="_blank" rel="noopener">mortysome.fun/blog</a>`),
+          row('443/tcp', 'https', 'github', `<a href="https://github.com/mortysome" target="_blank" rel="noopener">github.com/mortysome</a>`),
+          row('1337/tcp', 'waste', 'ctf', `<span class="jump" data-jump="dir-ctf">~/work/ctf</span>`),
+          row('8080/tcp', 'http-alt', 'homelab', `<span class="jump" data-jump="dir-homelab">~/work/homelab</span>`),
+          row('25565/tcp', 'minecraft', 'homelab', `<span class="jump" data-jump="dir-homelab">the minecraft server</span>`),
+        ], 'nmap', true),
+        ``,
+        `Nmap done: 1 IP address (1 host up) scanned in ${(Math.random() * .8 + .3).toFixed(2)} seconds`,
+        `<span class="c-faint">tip: click a target to go there.</span>`,
+      ];
+      if (REDUCE) return print(lines);
+      busy = true;
+      lines.forEach((l, i) => setTimeout(() => { print(l); if (i === lines.length - 1) busy = false; }, i < 4 ? i * 120 : 480 + (i - 4) * 160));
+    },
+    docker: (args) => {
+      if (args[0] !== 'ps') return print(`usage: docker ps`);
+      const r = (id, name, role) => [id, name, `<span class="c-green">Up</span>`, role];
+      print([
+        `<span class="c-faint">host: CasaOS on an old laptop · all containers up</span>`,
+        table([
+          ['CONTAINER ID', 'NAMES', 'STATUS', 'ROLE'],
+          r('7b2e9d0c4a1f', 'media-server', 'streaming'),
+          r('e1c4f8a2d9b3', 'media-automation', 'library management'),
+          r('5d8a1b7e3c2f', 'minecraft', '25565/tcp'),
+          r('9f3c2e1a8b7d', 'nas-storage', 'files, personal cloud'),
+        ], 'dock', true),
+        `<span class="c-faint">see</span> <span class="jump" data-jump="dir-homelab">~/work/homelab</span>`,
+      ]);
+    },
+    fortune: () => print(fortune()),
+    'view-source': () => print([
+      `it's one html file. no framework, no build step, nothing minified.`,
+      `<span class="c-faint">view-source and help yourself, or see the rest at</span> <a href="https://github.com/mortysome" target="_blank" rel="noopener" class="c-blue">github.com/mortysome</a>`,
+    ]),
+    motd: () => print(FORTUNES[fIdx]),
+    man: (args) => {
+      if (!args[0]) return print(`What manual page do you want?  <span class="c-faint">try</span> <span class="c-green">man morty</span>`);
+      if (args[0] !== 'morty' && args[0] !== PROFILE.user) return print(`No manual entry for ${esc(args[0])}`);
+      print([
+        `<div class="manhead"><span>MORTY(1)</span><span class="mid c-muted">User Commands</span><span>MORTY(1)</span></div>`,
+        ``,
+        `<b>NAME</b>`,
+        block(`morty — security, linux, programming`),
+        ``,
+        `<b>SYNOPSIS</b>`,
+        block(`morty [--ctf] [--osint] [--homelab] [--hardware]`),
+        ``,
+        `<b>DESCRIPTION</b>`,
+        block(`Cybersecurity student and Debian user. Plays CTFs and OSINT challenges, runs a homelab on an old laptop, and writes scripts and small tools. Currently learning hardware. Prefers open source.`),
+        ``,
+        `<b>OPTIONS</b>`,
+        block(table([
+          ['--ctf', 'capture the flag; write-ups coming soon'],
+          ['--osint', 'open-source intelligence challenges'],
+          ['--homelab', 'casaos + docker on an old laptop'],
+          ['--hardware', 'in progress; expect burnt components'],
+        ])),
+        ``,
+        `<b>BUGS</b>`,
+        block(`Occasionally breaks his own homelab. Keeps backups for that reason.`),
+        ``,
+        `<b>SEE ALSO</b>`,
+        block(`fortune(6), LICENSE, github.com/mortysome, mortysome.fun/blog`),
+      ]);
+    },
+    socials: () => print(socialsLines()),
+    blog: () => print(`opening <a href="https://mortysome.fun/blog/" target="_blank" rel="noopener" class="c-blue">mortysome.fun/blog</a> <span class="c-faint">(click the link)</span>`),
+    github: () => print(`opening <a href="https://github.com/mortysome" target="_blank" rel="noopener" class="c-blue">github.com/mortysome</a> <span class="c-faint">(click the link)</span>`),
+    history: () => print(hist.map((h, i) => `  ${String(i + 1).padStart(3)}  ${esc(h)}`)),
+    clear: () => { out.innerHTML = ''; },
+    date: () => print(new Date().toString()),
+    uname: (args) => print(args[0] === '-a' ? `Linux ${PROFILE.host} portfolio #1 SMP ${PROFILE.name} x86_64 GNU/Linux` : 'Linux'),
+    uptime: () => print(`up ${fmtUptime()}, 1 user, load average: 0.42, 0.13, 0.37`),
+    echo: (args) => print(esc(args.join(' '))),
+    sudo: (args) => {
+      if (args.join(' ').startsWith('hire')) return print([`<span class="c-green">[sudo] access granted.</span> scrolling to contact…`]), setTimeout(() => jump('contact'), 400);
+      print(`<span class="c-red">${PROFILE.user} is not in the sudoers file. This incident will be reported.</span>`);
+    },
+    rm: (args) => print(args.includes('-rf') ? `<span class="c-red">rm: refusing to remove my portfolio. backups exist anyway.</span>` : `<span class="c-red">rm: missing operand</span>`),
+    exit: () => print(`<span class="c-faint">there's no exit, only <span class="c-green">help</span>.</span>`),
+    vim: () => print(`<span class="c-faint">you're now stuck in vim. just kidding. type :q anywhere else.</span>`),
+    nano: () => print(`<span class="c-faint">nano? fair. no judgment here.</span>`),
+    apt: (args) => {
+      if (args[0] === 'upgrade') return print([`Reading package lists... Done`, `0 upgraded, 0 newly installed. <span class="c-faint">the homelab is another story.</span>`]);
+      print(args[0] === 'install' && args[1]
+        ? [`Reading package lists... Done`, `<span class="c-green">${esc(args[1])}</span> is already the newest version.`]
+        : `usage: apt install &lt;package&gt; | apt upgrade`);
+    },
+  };
+
+  function run(raw) {
+    const line = raw.trim();
+    print(ps1() + esc(raw));
+    if (!line) return;
+    hist.push(line); hIdx = hist.length;
+    const [cmd, ...args] = line.split(/\s+/);
+    if (cmd === ':q' || cmd === ':wq') return print(`<span class="c-faint">see? easy.</span>`);
+    const fn = COMMANDS[cmd.toLowerCase()];
+    if (fn) fn(args);
+    else print(`<span class="c-red">bash: ${esc(cmd)}: command not found</span> <span class="c-faint">— try <span class="c-green">help</span></span>`);
+  }
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { if (busy) return; run(input.value); input.value = ''; }
+    else if (e.key === 'ArrowUp') { if (hIdx > 0) { hIdx--; input.value = hist[hIdx]; } e.preventDefault(); }
+    else if (e.key === 'ArrowDown') { if (hIdx < hist.length - 1) { hIdx++; input.value = hist[hIdx]; } else { hIdx = hist.length; input.value = ''; } e.preventDefault(); }
+    else if (e.key === 'Tab') {
+      e.preventDefault();
+      const parts = input.value.split(/\s+/);
+      const pool = parts.length > 1
+        ? (parts[0] === 'cd' ? DIRS : parts[0] === 'ls' ? DIRS : parts[0] === 'nmap' ? ['mortysome.fun'] : parts[0] === 'cat' ? Object.keys(FILES).filter(f => !HIDDEN.includes(f)) : [])
+        : Object.keys(COMMANDS);
+      const cur = parts[parts.length - 1];
+      const hits = pool.filter(p => p.startsWith(cur));
+      if (hits.length === 1) { parts[parts.length - 1] = hits[0]; input.value = parts.join(' ') + (parts.length === 1 ? ' ' : ''); }
+      else if (hits.length > 1) print(ps1() + esc(input.value)), print(hits.join('  '));
+    }
+    else if (e.key === 'l' && e.ctrlKey) { e.preventDefault(); out.innerHTML = ''; }
+  });
+  term.addEventListener('click', () => { if (!window.getSelection().toString()) input.focus({ preventScroll: true }); });
+  // Clickable targets inside terminal output (e.g. nmap results)
+  out.addEventListener('click', e => {
+    const j = e.target.closest('[data-jump]'); if (!j) return;
+    e.stopPropagation(); jump(j.dataset.jump);
+  });
+
+  // Quake-style console: press ` anywhere to jump into the terminal, Esc to leave
+  const win = document.querySelector('.win');
+  const hintEl = document.getElementById('consoleHint');
+  function openConsole() {
+    win.scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth', block: 'center' });
+    input.focus({ preventScroll: true });
+    win.classList.remove('flash'); void win.offsetWidth; win.classList.add('flash');
+  }
+  document.addEventListener('keydown', e => {
+    const el = document.activeElement;
+    const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+    if (e.key === '`' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); openConsole(); }
+    else if (e.key === 'Escape' && el === input) { input.blur(); }
+  });
+  // show the hint once the terminal has scrolled out of view
+  new IntersectionObserver(([en]) => hintEl.classList.toggle('show', !en.isIntersecting), { threshold: 0.1 }).observe(win);
+
+  document.getElementById('chips').addEventListener('click', e => {
+    const b = e.target.closest('button[data-cmd]'); if (!b) return;
+    run(b.dataset.cmd); input.focus({ preventScroll: true });
+  });
+
+  // Boot state: page opens with a filled terminal
+  print(`<span class="c-faint">Debian GNU/Linux · tty1 · last login: ${new Date().toDateString()}</span>`);
+  print(`<span class="c-faint">motd:</span> ${FORTUNES[fIdx]}`);
+  print('');
+  print(ps1() + 'neofetch');
+  neofetch();
+  print(`<span class="c-faint">type <span class="c-green">help</span> to get started, or tap a command below. press <kbd>\`</kbd> anywhere on the page to come back here.</span>`);
+  print('');
+
+  /* ── Status bar: clock, uptime, active workspace ── */
+  const clock = document.getElementById('clock'), up = document.getElementById('uptime');
+  const tick = () => {
+    const d = new Date();
+    clock.textContent = d.toLocaleDateString(undefined, { weekday: 'short' }) + ' ' + d.toTimeString().slice(0, 5);
+    up.textContent = fmtUptime();
+  };
+  tick(); setInterval(tick, 1000);
+
+  const links = [...document.querySelectorAll('.ws a')];
+  const ids = links.map(a => a.getAttribute('href').slice(1));
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + en.target.id));
+    });
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  ids.forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
+})();
+</script>
+
+</body>
+</html>
